@@ -91,7 +91,11 @@ func InitAllGroupDiffs(
 }
 
 
-
+//SyncGroups executes the whole sync process by
+//  gather the list of matching Source Group - Target Group pairs,
+//  getting the members of all those groups,
+//  figuring which members need to be added or deleted from each Target Group
+//  executing the commands to add or delete all those members
 func SyncGroups(
 	correspondingGroups [][2]string,
 	googleAuthUserEmail string,
