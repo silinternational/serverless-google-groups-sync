@@ -4,6 +4,8 @@ import (
 	"google.golang.org/api/admin/directory/v1"
 	"github.com/silinternational/serverless-google-groups-sync"
 	"github.com/silinternational/serverless-google-groups-sync/lib/googleclient"
+	"fmt"
+	"log"
 )
 
 
@@ -86,4 +88,44 @@ func InitAllGroupDiffs(
 	groupDiffs = DiffAllGroups(groupDiffs)
 
 	return groupDiffs, nil
+}
+
+
+
+func SyncGroups(
+	correspondingGroups [][2]string,
+	googleAuthUserEmail string,
+	credentialsFilePath string,
+	sourceMemberGetter domain.GroupMembersGetter,
+) error {
+
+	adminService, err := googleclient.GetGoogleAdminService(googleAuthUserEmail, credentialsFilePath)
+	if err != nil {
+		return err
+	}
+
+	groupDiffs, err := InitAllGroupDiffs(correspondingGroups, adminService, sourceMemberGetter)
+	if err != nil {
+		return fmt.Errorf("Unable to initialize group data:  %s", err)
+	}
+
+
+	for _, nextDiff := range groupDiffs {
+		err := googleclient.AddMembersToGroup(nextDiff.TargetGroup, nextDiff.MembersToAdd, adminService)
+		if err != nil {
+			return fmt.Errorf("Unable to add members to Google group %s:  %s", nextDiff.TargetGroup, err)
+		}
+
+		err = googleclient.DeleteMembersFromGroup(nextDiff.TargetGroup, nextDiff.MembersToDelete, adminService)
+		if err != nil {
+			return fmt.Errorf("Unable to delete members from Google group %s:  %s", nextDiff.TargetGroup, err)
+		}
+	}
+
+	for _, nextDiff := range groupDiffs {
+		log.Printf("\n  Source Group: %s.   Target Group: %s.   Number Added: %d.   Number Deleted: %d  \n",
+			nextDiff.SourceGroup, nextDiff.TargetGroup, len(nextDiff.MembersToAdd), len(nextDiff.MembersToDelete))
+	}
+
+	return nil
 }
