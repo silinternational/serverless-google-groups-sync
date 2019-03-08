@@ -64,7 +64,8 @@ func GetGoogleAdminService(
 
 // GetMembersForGroup populates the TargetMembers attribute of a GroupDiff with the email addresses of the
 // members of the corresponding Google Group.
-func GetMembersForGroup(group string, groupDiff *domain.GroupDiff, adminService *admin.Service) error {
+func GetMembersForGroup(groupDiff *domain.GroupDiff, adminService *admin.Service) error {
+	group := groupDiff.TargetGroup
 	membersHolder, err := adminService.Members.List(group).Do()
 	if err != nil {
 		return fmt.Errorf("Unable to get members of group %s: %s", group, err)
@@ -82,6 +83,21 @@ func GetMembersForGroup(group string, groupDiff *domain.GroupDiff, adminService 
 	return nil
 }
 
+func GetMembersForAllGroups(
+	groupDiffs []*domain.GroupDiff,
+	adminService *admin.Service,
+) ([]*domain.GroupDiff, error) {
+
+	for _, nextDiff := range groupDiffs {
+		err := GetMembersForGroup(nextDiff, adminService)
+
+		if err != nil {
+			return groupDiffs, err
+		}
+	}
+
+	return groupDiffs, nil
+}
 
 // AddMembersToGroup inserts new Gmail users into a Google Group
 func AddMembersToGroup(groupName string, members []string, adminService *admin.Service) error {
