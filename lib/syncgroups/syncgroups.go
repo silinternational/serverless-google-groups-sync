@@ -44,6 +44,8 @@ func DiffAllGroups(allGroups []*domain.GroupDiff) []*domain.GroupDiff {
 	return modifiedGroups
 }
 
+
+// GetSourceMembersForAllGroups populates the SourceMembers attribute for all the Source Groups
 func GetSourceMembersForAllGroups(groupDiffs []*domain.GroupDiff, getter domain.GroupMembersGetter) ([]*domain.GroupDiff, error) {
 	for _, nextDiff := range groupDiffs {
 		err := getter(nextDiff)

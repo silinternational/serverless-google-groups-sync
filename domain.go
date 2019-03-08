@@ -1,6 +1,6 @@
 package domain
 
-// Functions that return the members of a certain group
+// Functions that populates the members of a certain group
 type GroupMembersGetter func(*GroupDiff) error
 
 // GroupDiff holds the information needed by the sync process in relation to
