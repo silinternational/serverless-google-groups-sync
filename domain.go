@@ -1,5 +1,8 @@
 package domain
 
+// Functions that return the members of a certain group
+type GroupMembersGetter func(*GroupDiff) error
+
 // GroupDiff holds the information needed by the sync process in relation to
 //   the source group name,
 //   the target group name (e.g. the google group),
@@ -15,4 +18,15 @@ type GroupDiff struct {
 	TargetMembers []string
 	MembersToAdd []string
 	MembersToDelete []string
+}
+
+// IsStringInStringSlice checks whether there is a match for a string
+//  in a slice of strings
+func IsStringInStringSlice(needle string, haystack []string) bool {
+	for _, candidate := range haystack {
+		if needle == candidate {
+			return true
+		}
+	}
+	return false
 }
