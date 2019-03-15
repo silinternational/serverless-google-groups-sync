@@ -17,3 +17,6 @@ local.env
 # dev tools metadata
 .idea/
 node_modules/
+
+# google groups credential file
+creds.json

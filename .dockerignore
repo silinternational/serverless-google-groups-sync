@@ -1,3 +1,4 @@
 aws.credentials
 aws.env
 *.aes
+creds.json
