@@ -1,0 +1,19 @@
+{
+  "name": "serverless-google-groups-sync",
+  "description": "A Serverless cron for synchronizing google group membership",
+  "dependencies": {
+    "aws-sdk": "^2.187.0"
+  },
+  "engines": {
+    "node": ">=6.5.0 <7.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/silinternational/serverless-google-groups-sync"
+  },
+  "scripts": {},
+  "devDependencies": {
+    "serverless-domain-manager": "^2.4.0"
+  }
+}
