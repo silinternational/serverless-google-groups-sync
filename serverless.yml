@@ -9,6 +9,24 @@ provider:
   timeout: 120
   versionFunctions: false
   memorySize: 128
+  vpc:
+    securityGroupIds:
+      - ${env:VPC_SG_ID}
+    subnetIds:
+      - ${env:VPC_SUBNET1}
+      - ${env:VPC_SUBNET2}
+      - ${env:VPC_SUBNET3}
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+      Resource: "*"
+
+    - Effect: "Allow"
+      Action:
+        - "s3:GetObject"
+      Resource: "*"
 
   # you can overwrite defaults here
   #  stage: dev
@@ -18,12 +36,11 @@ provider:
   environment:
     stage: ${self:custom.stage}
     region: ${self:custom.region}
+    S3_BUCKET_FOR_GROUPS_MAP: ${env:S3_BUCKET_FOR_GROUPS_MAP}
 
 custom:
   stage: ${opt:stage, self:provider.stage}
   region: ${opt:region, self:provider.region}
-  s3_bucket: ${env:S3_BUCKET}
-
 
 
 package:
@@ -32,11 +49,11 @@ package:
   include:
   - ./bin/**
 
-#functions:
-#  cron:
-#    handler: bin/cron
-#    events:
-#    - schedule: cron(*/3 * * * ? *) # every 3 minutes
+functions:
+  cron:
+    handler: bin/testlambda
+    events:
+    - schedule: cron(*/30 * * * ? *) # every 3 minutes
 
 
 resources:
@@ -44,7 +61,7 @@ resources:
     ConfigBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:custom.s3_bucket}
+        BucketName: ${env:S3_BUCKET_FOR_GROUPS_MAP}
         AccessControl: Private
 
 
