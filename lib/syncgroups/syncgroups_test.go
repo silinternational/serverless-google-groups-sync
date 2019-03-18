@@ -1,7 +1,7 @@
 package syncgroups
 
 import (
-	"github.com/silinternational/sggs/lib/testutils"
+	"github.com/silinternational/serverless-google-groups-sync/lib/testutils"
 	"github.com/silinternational/serverless-google-groups-sync"
 	"testing"
 )
