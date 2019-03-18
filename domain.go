@@ -1,5 +1,7 @@
 package domain
 
+import "os"
+
 // Functions that populates the members of a certain group
 type GroupMembersGetter func(*GroupDiff) error
 
@@ -29,4 +31,16 @@ func IsStringInStringSlice(needle string, haystack []string) bool {
 		}
 	}
 	return false
+}
+
+// GetEnv returns the value of the requested environment variable
+//   or the given default value, if the environment variable's value is an
+//   empty string.
+func GetEnv(name, defaultValue string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		value = defaultValue
+	}
+
+	return value
 }
