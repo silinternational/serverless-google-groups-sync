@@ -2,7 +2,7 @@
 
 ### AWS Credentials
 See https://stackoverflow.com/a/46133337/856070 and
-include the credentials in the local.env file
+save AWS credentials to ./aws.credentials
 
 ### Google Service Account Configuration
 
