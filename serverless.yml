@@ -41,7 +41,6 @@ package:
 
 resources:
   Resources:
-
     ConfigBucket:
       Type: AWS::S3::Bucket
       Properties:
@@ -49,8 +48,11 @@ resources:
         AccessControl: Private
 
 
-# Print out the name of the bucket that is created
-Outputs:
-  ConfigBucketName:
-    Value:
-      Ref: ConfigBucket
+  # Print out the name of the bucket that is created
+  Outputs:
+    ConfigBucketName:
+      Value:
+        Ref: ConfigBucket
+    ConfigBucketARN:
+      Value:
+        "Fn::GetAtt": [ ConfigBucket, Arn ]
