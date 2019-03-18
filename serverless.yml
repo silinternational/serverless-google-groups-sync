@@ -36,7 +36,7 @@ provider:
   environment:
     stage: ${self:custom.stage}
     region: ${self:custom.region}
-    S3_BUCKET_FOR_GROUPS_MAP: ${env:S3_BUCKET_FOR_GROUPS_MAP}
+    S3_BUCKET_FOR_INPUT: ${env:S3_BUCKET_FOR_INPUT}
 
 custom:
   stage: ${opt:stage, self:provider.stage}
@@ -61,7 +61,7 @@ resources:
     ConfigBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${env:S3_BUCKET_FOR_GROUPS_MAP}
+        BucketName: ${env:S3_BUCKET_FOR_INPUT}
         AccessControl: Private
 
 
