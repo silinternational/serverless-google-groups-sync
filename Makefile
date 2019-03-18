@@ -9,4 +9,4 @@ test:
 
 slsdeploy:
 	docker-compose up -d app
-	docker-compose run app bash -c "sls deploy -v"
+	docker-compose exec app bash -c "./run-slsdeploy.sh"

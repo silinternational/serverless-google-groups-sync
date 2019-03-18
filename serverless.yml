@@ -53,4 +53,4 @@ resources:
 Outputs:
   ConfigBucketName:
     Value:
-      "Fn::GetAtt": [ ConfigBucket, Arn ]
+      Ref: ConfigBucket
