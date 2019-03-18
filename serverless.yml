@@ -1,0 +1,56 @@
+# For full config options, check the docs:
+#    docs.serverless.com
+
+service: serverless-google-groups-sync
+
+provider:
+  name: aws
+  runtime: go1.x
+  timeout: 120
+  versionFunctions: false
+  memorySize: 128
+
+  # you can overwrite defaults here
+  #  stage: dev
+  #  region: us-east-1
+
+  # you can define service wide environment variables here
+  environment:
+    stage: ${self:custom.stage}
+    region: ${self:custom.region}
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  region: ${opt:region, self:provider.region}
+  s3_bucket: ${env:S3_BUCKET}
+
+
+
+package:
+  exclude:
+  - ./**
+  include:
+  - ./bin/**
+
+#functions:
+#  cron:
+#    handler: bin/cron
+#    events:
+#    - schedule: cron(*/3 * * * ? *) # every 3 minutes
+
+
+resources:
+  Resources:
+
+    ConfigBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.s3_bucket}
+        AccessControl: Private
+
+
+# Print out the name of the bucket that is created
+Outputs:
+  ConfigBucketName:
+    Value:
+      "Fn::GetAtt": [ ConfigBucket, Arn ]
