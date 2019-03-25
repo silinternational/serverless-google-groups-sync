@@ -1,13 +1,16 @@
 package domain
 
 import (
-	"testing"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 func TestIsStringInStringSlice_True(t *testing.T) {
 	type TestCase struct {
-		needle string
+		needle   string
 		haystack []string
 	}
 
@@ -29,7 +32,7 @@ func TestIsStringInStringSlice_True(t *testing.T) {
 
 func TestIsStringInStringSlice_False(t *testing.T) {
 	type TestCase struct {
-		needle string
+		needle   string
 		haystack []string
 	}
 
@@ -46,5 +49,56 @@ func TestIsStringInStringSlice_False(t *testing.T) {
 			t.Errorf("%s   String: %s.\n   Slice: %v", errStart, data.needle, data.haystack)
 			return
 		}
+	}
+}
+
+func TestGetGroupMembersFromSource(t *testing.T) {
+	group1Data := []string{
+		"user1@domain.com", "user2@domain.com", "user3@domain.com",
+	}
+	group1ResponseBody, _ := json.Marshal(&group1Data)
+
+	group2Data := []string{
+		"user1@domain.com", "user2@domain.com",
+	}
+	group2ResponseBody, _ := json.Marshal(&group2Data)
+
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+
+	mux.HandleFunc("/group1", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(200)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprintf(w, string(group1ResponseBody))
+	})
+
+	mux.HandleFunc("/group2", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(200)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprintf(w, string(group2ResponseBody))
+	})
+
+	apiConfig := MemberSourceApiConfig{
+		BaseURL: server.URL,
+		User:    "test",
+		Pass:    "test",
+	}
+
+	group1members, err := GetGroupMembersFromSource(apiConfig, "/group1")
+	if err != nil {
+		t.Errorf("failed to get group1 members, error: %s", err.Error())
+	}
+
+	if len(group1members) != len(group1Data) {
+		t.Errorf("group1 member response does not mach number of results in test data, got: %v", group1members)
+	}
+
+	group2members, err := GetGroupMembersFromSource(apiConfig, "/group2")
+	if err != nil {
+		t.Errorf("failed to get group2 members, error: %s", err.Error())
+	}
+
+	if len(group2members) != len(group2Data) {
+		t.Errorf("group2 member response does not mach number of results in test data, got: %v", group2members)
 	}
 }

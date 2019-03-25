@@ -21,12 +21,12 @@ provider:
     - Effect: "Allow"
       Action:
         - "s3:ListBucket"
-      Resource: "*"
+      Resource: "arn:aws:s3:::${env:S3_BUCKET_FOR_INPUT}"
 
     - Effect: "Allow"
       Action:
         - "s3:GetObject"
-      Resource: "*"
+      Resource: "arn:aws:s3:::${env:S3_BUCKET_FOR_INPUT}/*"
 
   # you can overwrite defaults here
   #  stage: dev

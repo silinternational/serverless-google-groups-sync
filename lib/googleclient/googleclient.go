@@ -1,12 +1,13 @@
 package googleclient
 
 import (
+	"fmt"
+	"io/ioutil"
+
+	"github.com/silinternational/serverless-google-groups-sync"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
-	"fmt"
 	"google.golang.org/api/admin/directory/v1"
-	"io/ioutil"
-	"github.com/silinternational/serverless-google-groups-sync"
 )
 
 func getServiceForScopes(googleAuthUserEmail string, credBytes []byte, scope string) (*admin.Service, error) {
@@ -19,7 +20,6 @@ func getServiceForScopes(googleAuthUserEmail string, credBytes []byte, scope str
 
 	config.Subject = googleAuthUserEmail
 	client := config.Client(context.Background())
-
 
 	service, err = admin.New(client)
 	if err != nil {
@@ -35,7 +35,7 @@ func getServiceForScopes(googleAuthUserEmail string, credBytes []byte, scope str
 func GetGoogleAdminService(
 	googleAuthUserEmail string,
 	credentialsFilePath string,
-	)(*admin.Service, error) {
+) (*admin.Service, error) {
 
 	adminService := &admin.Service{}
 
@@ -52,7 +52,6 @@ func GetGoogleAdminService(
 	config.Subject = googleAuthUserEmail
 	client := config.Client(context.Background())
 
-
 	adminService, err = admin.New(client)
 	if err != nil {
 		return adminService, fmt.Errorf("Unable to retrieve directory Service: %s", err)
@@ -60,7 +59,6 @@ func GetGoogleAdminService(
 
 	return adminService, nil
 }
-
 
 // GetMembersForGroup populates the TargetMembers attribute of a GroupDiff with the email addresses of the
 // members of the corresponding Google Group.
@@ -109,7 +107,7 @@ func AddMembersToGroup(groupName string, members []string, adminService *admin.S
 
 	for _, memberEmail := range members {
 		newMember := admin.Member{
-			Role: "MEMBER",
+			Role:  "MEMBER",
 			Email: memberEmail,
 		}
 
@@ -121,7 +119,6 @@ func AddMembersToGroup(groupName string, members []string, adminService *admin.S
 
 	return nil
 }
-
 
 // DeleteMembersFromGroup deletes matching Gmail users from a Google Group
 func DeleteMembersFromGroup(group string, members []string, adminService *admin.Service) error {
@@ -140,4 +137,3 @@ func DeleteMembersFromGroup(group string, members []string, adminService *admin.
 
 	return nil
 }
-

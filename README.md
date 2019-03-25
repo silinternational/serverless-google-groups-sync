@@ -40,7 +40,7 @@ The serverless build process will create an S3 bucket if it doesn't already exis
 that is based on ????? and ?????.
 
 This bucket will not contain the creds.json file created during the Google Service Account Configuration (above)
-as well as a json file containing a list of the group name pairs. This file should be named group-names.json
+as well as a json file containing a list of the group name pairs. This file should be named groups-map.json
 and should look something like this (note: do not include a comma after the last entry) ...
 
 ```

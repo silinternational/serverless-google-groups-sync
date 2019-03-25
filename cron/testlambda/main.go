@@ -1,31 +1,32 @@
 package main
 
 import (
-	"github.com/aws/aws-lambda-go/lambda"
-	"log"
-	"os"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"io/ioutil"
+	"log"
+
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"io/ioutil"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/silinternational/serverless-google-groups-sync"
 )
 
 const GoogleCredsJsonFile = "/tmp/google-creds.json"
 
 type TestConfig struct {
-	GroupsMapS3ARN string
-	GroupsMapFileName string `json:"GroupsMapFileName"`
-	AWSAccessKeyID string
-	AWSSecretAccessKey string
+	GroupsMapS3ARN        string
+	GroupsMapFileName     string `json:"GroupsMapFileName"`
+	MemberSourceApiConfig domain.MemberSourceApiConfig
+	// AWSAccessKeyID     string
+	// AWSSecretAccessKey string
 }
 
 func (t *TestConfig) setRequired() error {
 	errMsg := "Error: required value missing for environment variable %s"
 
-
 	envKey := "S3_BUCKET_FOR_INPUT"
-	value := os.Getenv(envKey)
+	value := domain.GetEnv(envKey, "")
 	if value == "" {
 		return fmt.Errorf(errMsg, envKey)
 	}
@@ -36,7 +37,7 @@ func (t *TestConfig) setRequired() error {
 
 func (t *TestConfig) setDefaults() {
 	if t.GroupsMapFileName == "" {
-		t.GroupsMapFileName = "groups_map.json"
+		t.GroupsMapFileName = "groups-map.json"
 	}
 }
 
@@ -45,12 +46,12 @@ func saveGoogleCredsJsonFile(objectOutput *s3.GetObjectOutput) error {
 
 	bodyBuf, err := ioutil.ReadAll(body)
 	if err != nil {
-		return fmt.Errorf("Unable to read Google Credentials file from S3: ", err)
+		return fmt.Errorf("unable to read Google Credentials file from S3: %s", err.Error())
 	}
 
 	err = ioutil.WriteFile(GoogleCredsJsonFile, bodyBuf, 0644)
 	if err != nil {
-		return fmt.Errorf("Unable to write Google Credentials to disk: ", err)
+		return fmt.Errorf("unable to write Google Credentials to disk: %s", err.Error())
 	}
 
 	// log.Println("Wrote following to disk: \n ", string(bodyBuf))
@@ -72,7 +73,7 @@ func handler(config TestConfig) error {
 
 	bucketItem := s3.GetObjectInput{
 		Bucket: aws.String(config.GroupsMapS3ARN),
-		Key: aws.String(config.GroupsMapFileName),
+		Key:    aws.String(config.GroupsMapFileName),
 	}
 
 	sess := session.Must(session.NewSession())
@@ -99,7 +100,6 @@ func handler(config TestConfig) error {
 
 	return nil
 }
-
 
 func main() {
 	lambda.Start(handler)

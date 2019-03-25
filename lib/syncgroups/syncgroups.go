@@ -1,13 +1,13 @@
 package syncgroups
 
 import (
-	"google.golang.org/api/admin/directory/v1"
-	"github.com/silinternational/serverless-google-groups-sync"
-	"github.com/silinternational/serverless-google-groups-sync/lib/googleclient"
 	"fmt"
 	"log"
-)
 
+	"github.com/silinternational/serverless-google-groups-sync"
+	"github.com/silinternational/serverless-google-groups-sync/lib/googleclient"
+	"google.golang.org/api/admin/directory/v1"
+)
 
 // DiffGroup populates the slice of members to add to the target group,
 //    because they are in the source group but not the target group
@@ -31,7 +31,6 @@ func DiffGroup(groupDiff *domain.GroupDiff) {
 	}
 }
 
-
 // DiffAllGroups populates each group's slices of members to add and members to delete
 func DiffAllGroups(allGroups []*domain.GroupDiff) []*domain.GroupDiff {
 	modifiedGroups := []*domain.GroupDiff{}
@@ -43,7 +42,6 @@ func DiffAllGroups(allGroups []*domain.GroupDiff) []*domain.GroupDiff {
 
 	return modifiedGroups
 }
-
 
 // GetSourceMembersForAllGroups populates the SourceMembers attribute for all the Source Groups
 func GetSourceMembersForAllGroups(groupDiffs []*domain.GroupDiff, getter domain.GroupMembersGetter) ([]*domain.GroupDiff, error) {
@@ -57,7 +55,6 @@ func GetSourceMembersForAllGroups(groupDiffs []*domain.GroupDiff, getter domain.
 
 	return groupDiffs, nil
 }
-
 
 // InitAllGroupDiffs gets all the groups from the source system and then creates
 //  a slice of pointers to matching GroupDiffs that have all their attributes populated,
@@ -92,8 +89,7 @@ func InitAllGroupDiffs(
 	return groupDiffs, nil
 }
 
-
-//SyncGroups executes the whole sync process by
+// SyncGroups executes the whole sync process by
 //  gather the list of matching Source Group - Target Group pairs,
 //  getting the members of all those groups,
 //  figuring which members need to be added or deleted from each Target Group
@@ -114,7 +110,6 @@ func SyncGroups(
 	if err != nil {
 		return fmt.Errorf("Unable to initialize group data:  %s", err)
 	}
-
 
 	for _, nextDiff := range groupDiffs {
 		err := googleclient.AddMembersToGroup(nextDiff.TargetGroup, nextDiff.MembersToAdd, adminService)

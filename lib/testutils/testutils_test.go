@@ -1,8 +1,8 @@
 package testutils
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestAreStringSlicesEqual_True(t *testing.T) {
@@ -25,8 +25,6 @@ func TestAreStringSlicesEqual_True(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestAreStringSlicesEqual_False(t *testing.T) {
 	testData := [][2][]string{

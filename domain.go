@@ -1,6 +1,12 @@
 package domain
 
-import "os"
+import (
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+)
 
 // Functions that populates the members of a certain group
 type GroupMembersGetter func(*GroupDiff) error
@@ -14,12 +20,22 @@ type GroupMembersGetter func(*GroupDiff) error
 //   the email address that should be delete from the target group, since they
 //     don't appear in the source group
 type GroupDiff struct {
-	SourceGroup string
-	TargetGroup string
-	SourceMembers []string
-	TargetMembers []string
-	MembersToAdd []string
+	SourceGroup     string
+	TargetGroup     string
+	SourceMembers   []string
+	TargetMembers   []string
+	MembersToAdd    []string
 	MembersToDelete []string
+}
+
+// MemberSourceApiConfig holds API information for fetching members to be sycned to a Google Group
+//    BaseURL is the API base without trailing slash. It is assumed all groups to be sycned will be sub-paths from here
+//    User is username for basic https auth
+//    Pass is password for basic https auth
+type MemberSourceApiConfig struct {
+	BaseURL string
+	User    string
+	Pass    string
 }
 
 // IsStringInStringSlice checks whether there is a match for a string
@@ -43,4 +59,28 @@ func GetEnv(name, defaultValue string) string {
 	}
 
 	return value
+}
+
+// GetGroupMembersFromSource calls HTTPS API to get members for given group
+func GetGroupMembersFromSource(apiConfig MemberSourceApiConfig, groupPath string) ([]string, error) {
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", apiConfig.BaseURL+groupPath, nil)
+	req.SetBasicAuth(apiConfig.User, apiConfig.Pass)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return []string{}, err
+	}
+
+	bodyText, err := ioutil.ReadAll(resp.Body)
+
+	members := []string{}
+	err = json.Unmarshal(bodyText, &members)
+	if err != nil {
+		log.Println(err)
+		return []string{}, err
+	}
+
+	return members, nil
 }

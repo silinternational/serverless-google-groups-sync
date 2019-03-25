@@ -1,37 +1,37 @@
 package syncgroups
 
 import (
-	"github.com/silinternational/serverless-google-groups-sync/lib/testutils"
 	"github.com/silinternational/serverless-google-groups-sync"
+	"github.com/silinternational/serverless-google-groups-sync/lib/testutils"
 	"testing"
 )
 
 func TestDiffGroup(t *testing.T) {
 
 	type TestCase struct {
-		source []string
-		target []string
-		expectedToAdd []string
+		source           []string
+		target           []string
+		expectedToAdd    []string
 		expectedToDelete []string
 	}
 
 	testData := []TestCase{
-		{  // No changes
-			source: []string{"mm", "aa", "gg"},
-			target: []string{"mm", "aa", "gg"},
-			expectedToAdd: []string{},
+		{ // No changes
+			source:           []string{"mm", "aa", "gg"},
+			target:           []string{"mm", "aa", "gg"},
+			expectedToAdd:    []string{},
 			expectedToDelete: []string{},
 		},
-		{  // Everything is different
-			source: []string{"mm", "aa", "gg"},
-			target: []string{"zz", "xx", "yy"},
-			expectedToAdd: []string{"mm", "aa", "gg"},
+		{ // Everything is different
+			source:           []string{"mm", "aa", "gg"},
+			target:           []string{"zz", "xx", "yy"},
+			expectedToAdd:    []string{"mm", "aa", "gg"},
 			expectedToDelete: []string{"zz", "xx", "yy"},
 		},
-		{  // some of each
-			source: []string{"mm", "aa", "gg"},
-			target: []string{"mm", "aa", "yy"},
-			expectedToAdd: []string{"gg"},
+		{ // some of each
+			source:           []string{"mm", "aa", "gg"},
+			target:           []string{"mm", "aa", "yy"},
+			expectedToAdd:    []string{"gg"},
 			expectedToDelete: []string{"yy"},
 		},
 	}
@@ -58,44 +58,43 @@ func TestDiffGroup(t *testing.T) {
 	}
 }
 
-
 func TestDiffAllGroups(t *testing.T) {
 
 	type TestCase struct {
-		groupDiff *domain.GroupDiff
-		expectedToAdd []string
+		groupDiff        *domain.GroupDiff
+		expectedToAdd    []string
 		expectedToDelete []string
 	}
 
 	testData := []TestCase{
-		{  // No changes
+		{ // No changes
 			groupDiff: &domain.GroupDiff{
-				SourceGroup: "TestSource",
-				TargetGroup: "TestTarget",
+				SourceGroup:   "TestSource",
+				TargetGroup:   "TestTarget",
 				SourceMembers: []string{"mm", "aa", "gg"},
 				TargetMembers: []string{"mm", "aa", "gg"},
 			},
-			expectedToAdd: []string{},
+			expectedToAdd:    []string{},
 			expectedToDelete: []string{},
 		},
-		{  // Everything is different
+		{ // Everything is different
 			groupDiff: &domain.GroupDiff{
-				SourceGroup: "TestSource",
-				TargetGroup: "TestTarget",
+				SourceGroup:   "TestSource",
+				TargetGroup:   "TestTarget",
 				SourceMembers: []string{"mm", "aa", "gg"},
 				TargetMembers: []string{"zz", "xx", "yy"},
 			},
-			expectedToAdd: []string{"mm", "aa", "gg"},
+			expectedToAdd:    []string{"mm", "aa", "gg"},
 			expectedToDelete: []string{"zz", "xx", "yy"},
 		},
-		{  // some of each
+		{ // some of each
 			groupDiff: &domain.GroupDiff{
-				SourceGroup: "TestSource",
-				TargetGroup: "TestTarget",
+				SourceGroup:   "TestSource",
+				TargetGroup:   "TestTarget",
 				SourceMembers: []string{"mm", "aa", "gg"},
 				TargetMembers: []string{"mm", "aa", "yy"},
 			},
-			expectedToAdd: []string{"gg"},
+			expectedToAdd:    []string{"gg"},
 			expectedToDelete: []string{"yy"},
 		},
 	}
