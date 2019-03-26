@@ -1,8 +1,12 @@
 package syncgroups
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"strings"
 
 	"github.com/silinternational/serverless-google-groups-sync"
 	"github.com/silinternational/serverless-google-groups-sync/lib/googleclient"
@@ -44,13 +48,13 @@ func DiffAllGroups(allGroups []*domain.GroupDiff) []*domain.GroupDiff {
 }
 
 // GetSourceMembersForAllGroups populates the SourceMembers attribute for all the Source Groups
-func GetSourceMembersForAllGroups(groupDiffs []*domain.GroupDiff, getter domain.GroupMembersGetter) ([]*domain.GroupDiff, error) {
+func GetSourceMembersForAllGroups(groupDiffs []*domain.GroupDiff, memberSourceApiConfig domain.MemberSourceApiConfig) ([]*domain.GroupDiff, error) {
 	for _, nextDiff := range groupDiffs {
-		err := getter(nextDiff)
-
+		sourceMembers, err := GetGroupMembersFromSource(memberSourceApiConfig, nextDiff.SourceGroup)
 		if err != nil {
 			return groupDiffs, err
 		}
+		nextDiff.SourceMembers = sourceMembers
 	}
 
 	return groupDiffs, nil
@@ -60,21 +64,21 @@ func GetSourceMembersForAllGroups(groupDiffs []*domain.GroupDiff, getter domain.
 //  a slice of pointers to matching GroupDiffs that have all their attributes populated,
 //  including the matching Target groups and their members
 func InitAllGroupDiffs(
-	correspondingGroups [][2]string,
+	groupMaps []domain.GroupMap,
 	googleAdminService *admin.Service,
-	sourceMemberGetter domain.GroupMembersGetter,
+	memberSourceApiConfig domain.MemberSourceApiConfig,
 ) ([]*domain.GroupDiff, error) {
 
 	groupDiffs := []*domain.GroupDiff{}
-	for _, groupPair := range correspondingGroups {
+	for _, group := range groupMaps {
 		newGroupDiff := domain.GroupDiff{
-			SourceGroup: groupPair[0],
-			TargetGroup: groupPair[1],
+			SourceGroup: group.SourcePath,
+			TargetGroup: group.GoogleGroupAddress,
 		}
 		groupDiffs = append(groupDiffs, &newGroupDiff)
 	}
 
-	groupDiffs, err := GetSourceMembersForAllGroups(groupDiffs, sourceMemberGetter)
+	groupDiffs, err := GetSourceMembersForAllGroups(groupDiffs, memberSourceApiConfig)
 	if err != nil {
 		return groupDiffs, err
 	}
@@ -95,18 +99,21 @@ func InitAllGroupDiffs(
 //  figuring which members need to be added or deleted from each Target Group
 //  executing the commands to add or delete all those members
 func SyncGroups(
-	correspondingGroups [][2]string,
-	googleAuthUserEmail string,
-	credentialsFilePath string,
-	sourceMemberGetter domain.GroupMembersGetter,
+	appConfig domain.AppConfig,
 ) error {
+	log.Println("Beginning google groups sync...")
+	googleGroupNames := []string{}
+	for _, groupMap := range appConfig.GroupMaps {
+		googleGroupNames = append(googleGroupNames, groupMap.GoogleGroupAddress)
+	}
+	log.Printf("Will attempt to sync %v groups: %s", len(appConfig.GroupMaps), strings.Join(googleGroupNames, ", "))
 
-	adminService, err := googleclient.GetGoogleAdminService(googleAuthUserEmail, credentialsFilePath)
+	adminService, err := googleclient.GetGoogleAdminService(appConfig.GoogleDelegatedAdmin, appConfig.GoogleAuth)
 	if err != nil {
 		return err
 	}
 
-	groupDiffs, err := InitAllGroupDiffs(correspondingGroups, adminService, sourceMemberGetter)
+	groupDiffs, err := InitAllGroupDiffs(appConfig.GroupMaps, adminService, appConfig.MemberSourceApiConfig)
 	if err != nil {
 		return fmt.Errorf("Unable to initialize group data:  %s", err)
 	}
@@ -128,5 +135,30 @@ func SyncGroups(
 			nextDiff.SourceGroup, nextDiff.TargetGroup, len(nextDiff.MembersToAdd), len(nextDiff.MembersToDelete))
 	}
 
+	log.Println("Google group sync process complete.")
 	return nil
+}
+
+// GetGroupMembersFromSource calls HTTPS API to get members for given group
+func GetGroupMembersFromSource(apiConfig domain.MemberSourceApiConfig, groupPath string) ([]string, error) {
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", apiConfig.BaseURL+groupPath, nil)
+	req.SetBasicAuth(apiConfig.User, apiConfig.Pass)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return []string{}, err
+	}
+
+	bodyText, err := ioutil.ReadAll(resp.Body)
+
+	members := []string{}
+	err = json.Unmarshal(bodyText, &members)
+	if err != nil {
+		log.Println(err)
+		return []string{}, err
+	}
+
+	return members, nil
 }

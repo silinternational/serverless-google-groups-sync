@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/silinternational/serverless-google-groups-sync/lib/syncgroups"
+
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -12,68 +14,42 @@ import (
 	"github.com/silinternational/serverless-google-groups-sync"
 )
 
-const GoogleCredsJsonFile = "/tmp/google-creds.json"
+const ApplicationConfigurationFile = "/tmp/config.json"
 
-type TestConfig struct {
-	GroupsMapS3ARN        string
-	GroupsMapFileName     string `json:"GroupsMapFileName"`
-	MemberSourceApiConfig domain.MemberSourceApiConfig
-	// AWSAccessKeyID     string
-	// AWSSecretAccessKey string
+type RuntimeConfig struct {
+	S3Bucket       string
+	ConfigFilename string
+	ConfigPath     string
+	AppConfig      domain.AppConfig
 }
 
-func (t *TestConfig) setRequired() error {
+func (t *RuntimeConfig) setRequired() error {
 	errMsg := "Error: required value missing for environment variable %s"
 
-	envKey := "S3_BUCKET_FOR_INPUT"
+	envKey := "S3_BUCKET"
 	value := domain.GetEnv(envKey, "")
 	if value == "" {
 		return fmt.Errorf(errMsg, envKey)
 	}
-	t.GroupsMapS3ARN = value
+	t.S3Bucket = value
 
 	return nil
 }
 
-func (t *TestConfig) setDefaults() {
-	if t.GroupsMapFileName == "" {
-		t.GroupsMapFileName = "groups-map.json"
+func (t *RuntimeConfig) setDefaults() {
+	if t.ConfigFilename == "" {
+		t.ConfigFilename = "config.json"
+	}
+	if t.ConfigPath == "" {
+		t.ConfigPath = "/tmp"
 	}
 }
 
-func saveGoogleCredsJsonFile(objectOutput *s3.GetObjectOutput) error {
-	body := objectOutput.Body
-
-	bodyBuf, err := ioutil.ReadAll(body)
-	if err != nil {
-		return fmt.Errorf("unable to read Google Credentials file from S3: %s", err.Error())
-	}
-
-	err = ioutil.WriteFile(GoogleCredsJsonFile, bodyBuf, 0644)
-	if err != nil {
-		return fmt.Errorf("unable to write Google Credentials to disk: %s", err.Error())
-	}
-
-	// log.Println("Wrote following to disk: \n ", string(bodyBuf))
-	return nil
-}
-
-func handler(config TestConfig) error {
-	log.Println("Starting TestLambda.")
-
-	err := config.setRequired()
-
-	if err != nil {
-		return err
-	}
-
-	config.setDefaults()
-
-	log.Println("Groups Map S3: ", config.GroupsMapS3ARN, " / ", config.GroupsMapFileName)
+func downloadConfigFromS3(config RuntimeConfig) error {
 
 	bucketItem := s3.GetObjectInput{
-		Bucket: aws.String(config.GroupsMapS3ARN),
-		Key:    aws.String(config.GroupsMapFileName),
+		Bucket: aws.String(config.S3Bucket),
+		Key:    aws.String(config.ConfigFilename),
 	}
 
 	sess := session.Must(session.NewSession())
@@ -81,22 +57,55 @@ func handler(config TestConfig) error {
 	svc := s3.New(sess)
 
 	s3Object, err := svc.GetObject(&bucketItem)
-
 	if err != nil {
-		log.Println("Unable to get Groups Map file from S3 ... ")
+		log.Println("unable to get config file from S3 ... ")
 		return err
 	}
 
-	// TODO Call a function that converts the Groups Map file from json into a golang map
-
-	// TODO Call this with the actual google credentials json file (not the Groups Map file)
-	err = saveGoogleCredsJsonFile(s3Object)
-
+	body := s3Object.Body
+	bodyBuf, err := ioutil.ReadAll(body)
 	if err != nil {
+		log.Println("unable to read config file from S3:", err.Error())
 		return err
 	}
 
-	log.Println("Success: S3 file length: ", fmt.Sprintf("%d", &s3Object.ContentLength))
+	err = ioutil.WriteFile(ApplicationConfigurationFile, bodyBuf, 0644)
+	if err != nil {
+		log.Println("unable to write config to disk:", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func handler(runtimeConfig RuntimeConfig) error {
+	log.Println("Starting TestLambda.")
+
+	err := runtimeConfig.setRequired()
+	if err != nil {
+		log.Println("unable to set required runtimeConfig parameters, error:", err.Error())
+		return err
+	}
+
+	runtimeConfig.setDefaults()
+
+	err = downloadConfigFromS3(runtimeConfig)
+	if err != nil {
+		log.Println("unable to download runtimeConfig file from s3, error:", err.Error())
+		return err
+	}
+
+	appConfig, err := domain.LoadAppConfig(ApplicationConfigurationFile)
+	if err != nil {
+		log.Println("unable to load app runtimeConfig, error:", err.Error())
+		return err
+	}
+
+	err = syncgroups.SyncGroups(appConfig)
+	if err != nil {
+		log.Println("error running sync groups, error:", err.Error())
+		return err
+	}
 
 	return nil
 }

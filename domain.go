@@ -4,12 +4,46 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 )
 
-// Functions that populates the members of a certain group
-type GroupMembersGetter func(*GroupDiff) error
+// GoogleAuth represents the JSON credentials file provided by Google for Service Accounts
+type GoogleAuth struct {
+	Type                    string `json:"type"`
+	ProjectID               string `json:"project_id"`
+	PrivateKeyID            string `json:"private_key_id"`
+	PrivateKey              string `json:"private_key"`
+	ClientEmail             string `json:"client_email"`
+	ClientID                string `json:"client_id"`
+	AuthURI                 string `json:"auth_uri"`
+	TokenURI                string `json:"token_uri"`
+	AuthProviderX509CertURL string `json:"auth_provider_x509_cert_url"`
+	ClientX509CertURL       string `json:"client_x509_cert_url"`
+}
+
+// MemberSourceApiConfig holds API information for fetching members to be sycned to a Google Group
+//    BaseURL is the API base without trailing slash. It is assumed all groups to be sycned will be sub-paths from here
+//    User is username for basic https auth
+//    Pass is password for basic https auth
+type MemberSourceApiConfig struct {
+	BaseURL string
+	User    string
+	Pass    string
+}
+
+// GroupMap holds the source API path to the group list report along with the Google Group address it should be synced to
+type GroupMap struct {
+	SourcePath         string
+	GoogleGroupAddress string
+}
+
+// AppConfig holds the full application configuration
+type AppConfig struct {
+	GoogleAuth            GoogleAuth
+	GoogleDelegatedAdmin  string
+	MemberSourceApiConfig MemberSourceApiConfig
+	GroupMaps             []GroupMap
+}
 
 // GroupDiff holds the information needed by the sync process in relation to
 //   the source group name,
@@ -26,16 +60,6 @@ type GroupDiff struct {
 	TargetMembers   []string
 	MembersToAdd    []string
 	MembersToDelete []string
-}
-
-// MemberSourceApiConfig holds API information for fetching members to be sycned to a Google Group
-//    BaseURL is the API base without trailing slash. It is assumed all groups to be sycned will be sub-paths from here
-//    User is username for basic https auth
-//    Pass is password for basic https auth
-type MemberSourceApiConfig struct {
-	BaseURL string
-	User    string
-	Pass    string
 }
 
 // IsStringInStringSlice checks whether there is a match for a string
@@ -61,26 +85,20 @@ func GetEnv(name, defaultValue string) string {
 	return value
 }
 
-// GetGroupMembersFromSource calls HTTPS API to get members for given group
-func GetGroupMembersFromSource(apiConfig MemberSourceApiConfig, groupPath string) ([]string, error) {
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", apiConfig.BaseURL+groupPath, nil)
-	req.SetBasicAuth(apiConfig.User, apiConfig.Pass)
-	resp, err := client.Do(req)
+// LoadAppConfig reads in the configuration.json file into an AppConfig struct
+func LoadAppConfig(filename string) (AppConfig, error) {
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Println(err)
-		return []string{}, err
+		log.Printf("unable to application config file %s, error: %s\n", filename, err.Error())
+		return AppConfig{}, err
 	}
 
-	bodyText, err := ioutil.ReadAll(resp.Body)
-
-	members := []string{}
-	err = json.Unmarshal(bodyText, &members)
+	appConfig := AppConfig{}
+	err = json.Unmarshal(data, &appConfig)
 	if err != nil {
-		log.Println(err)
-		return []string{}, err
+		log.Printf("unable to unmarshal application configuration file data, error: %s\n", err.Error())
+		return AppConfig{}, err
 	}
 
-	return members, nil
+	return appConfig, nil
 }

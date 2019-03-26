@@ -1,9 +1,10 @@
 package syncgroups
 
 import (
+	"testing"
+
 	"github.com/silinternational/serverless-google-groups-sync"
 	"github.com/silinternational/serverless-google-groups-sync/lib/testutils"
-	"testing"
 )
 
 func TestDiffGroup(t *testing.T) {
@@ -124,3 +125,43 @@ func TestDiffAllGroups(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadGroupMapsFromConfig(t *testing.T) {
+	appConfig, err := domain.LoadAppConfig("configuration-test.json")
+	if err != nil {
+		t.Errorf("Unable to load app config, error: %s", err.Error())
+	}
+	expected := 2
+	if len(appConfig.GroupMaps) != expected {
+		t.Errorf("did not get expected number of group maps from config, expected %v, got %v", expected, len(appConfig.GroupMaps))
+	}
+}
+
+// This test performs integration work against Google and is therefore commented out to not run on a regular basis
+// func TestSyncGroups(t *testing.T) {
+// 	appConfig, err := domain.LoadAppConfig("../../config.json")
+// 	if err != nil {
+// 		t.Errorf("unable to load app config, error: %s", err.Error())
+// 	}
+//
+// 	group1Data := []string{
+//
+// 	}
+// 	group1ResponseBody, _ := json.Marshal(&group1Data)
+//
+// 	mux := http.NewServeMux()
+// 	server := httptest.NewServer(mux)
+//
+// 	mux.HandleFunc("/group1", func(w http.ResponseWriter, req *http.Request) {
+// 		w.WriteHeader(200)
+// 		w.Header().Set("content-type", "application/json")
+// 		fmt.Fprintf(w, string(group1ResponseBody))
+// 	})
+//
+// 	appConfig.MemberSourceApiConfig.BaseURL = server.URL
+//
+// 	err = SyncGroups(appConfig)
+// 	if err != nil {
+// 		t.Errorf("unable to sync groups, error: %s", err.Error())
+// 	}
+// }

@@ -1,8 +1,9 @@
 package googleclient
 
 import (
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"log"
 
 	"github.com/silinternational/serverless-google-groups-sync"
 	"golang.org/x/net/context"
@@ -10,20 +11,26 @@ import (
 	"google.golang.org/api/admin/directory/v1"
 )
 
-func getServiceForScopes(googleAuthUserEmail string, credBytes []byte, scope string) (*admin.Service, error) {
+func getServiceForScopes(delegatedAdmin string, googleAuth domain.GoogleAuth, oauthScope string) (*admin.Service, error) {
 	service := &admin.Service{}
 
-	config, err := google.JWTConfigFromJSON(credBytes, scope) // e.g. admin.AdminDirectoryGroupMemberScope
+	googleAuthJson, err := json.Marshal(googleAuth)
 	if err != nil {
-		return service, fmt.Errorf("Unable to parse client secret file to config: %s", err)
+		log.Printf("unable to marshal google auth struct into json, error: %s\n", err.Error())
+		return service, err
 	}
 
-	config.Subject = googleAuthUserEmail
+	config, err := google.JWTConfigFromJSON(googleAuthJson, oauthScope) // e.g. admin.AdminDirectoryGroupMemberScope
+	if err != nil {
+		return service, fmt.Errorf("unable to parse client secret file to config: %s", err)
+	}
+
+	config.Subject = delegatedAdmin
 	client := config.Client(context.Background())
 
 	service, err = admin.New(client)
 	if err != nil {
-		return service, fmt.Errorf("Unable to retrieve directory Service: %s", err)
+		return service, fmt.Errorf("unable to retrieve directory Service: %s", err)
 	}
 
 	return service, nil
@@ -33,28 +40,29 @@ func getServiceForScopes(googleAuthUserEmail string, credBytes []byte, scope str
 //  that has the scopes for Group and GroupMember
 //  Authentication requires an email address that matches an actual GMail user (e.g. a machine account)
 func GetGoogleAdminService(
-	googleAuthUserEmail string,
-	credentialsFilePath string,
+	delegatedAdmin string,
+	googleAuth domain.GoogleAuth,
 ) (*admin.Service, error) {
 
 	adminService := &admin.Service{}
 
-	b, err := ioutil.ReadFile(credentialsFilePath) // e.g. "../../credentials.json"
+	googleAuthJson, err := json.Marshal(googleAuth)
 	if err != nil {
-		return adminService, fmt.Errorf("Unable to read client secret file: %s", err)
+		log.Printf("unable to marshal google auth struct into json, error: %s\n", err.Error())
+		return adminService, err
 	}
 
-	config, err := google.JWTConfigFromJSON(b, admin.AdminDirectoryGroupScope, admin.AdminDirectoryGroupMemberScope)
+	config, err := google.JWTConfigFromJSON(googleAuthJson, admin.AdminDirectoryGroupScope, admin.AdminDirectoryGroupMemberScope)
 	if err != nil {
-		return adminService, fmt.Errorf("Unable to parse client secret file to config: %s", err)
+		return adminService, fmt.Errorf("unable to parse client secret file to config: %s", err)
 	}
 
-	config.Subject = googleAuthUserEmail
+	config.Subject = delegatedAdmin
 	client := config.Client(context.Background())
 
 	adminService, err = admin.New(client)
 	if err != nil {
-		return adminService, fmt.Errorf("Unable to retrieve directory Service: %s", err)
+		return adminService, fmt.Errorf("unable to retrieve directory Service: %s", err)
 	}
 
 	return adminService, nil
@@ -66,7 +74,7 @@ func GetMembersForGroup(groupDiff *domain.GroupDiff, adminService *admin.Service
 	group := groupDiff.TargetGroup
 	membersHolder, err := adminService.Members.List(group).Do()
 	if err != nil {
-		return fmt.Errorf("Unable to get members of group %s: %s", group, err)
+		return fmt.Errorf("unable to get members of group %s: %s", group, err)
 	}
 
 	membersList := membersHolder.Members
@@ -113,7 +121,7 @@ func AddMembersToGroup(groupName string, members []string, adminService *admin.S
 
 		_, err := memberAdmin.Insert(groupName, &newMember).Do()
 		if err != nil {
-			return fmt.Errorf("Unable to insert %s in Google group %s: %s", memberEmail, groupName, err)
+			return fmt.Errorf("unable to insert %s in Google group %s: %s", memberEmail, groupName, err)
 		}
 	}
 
@@ -131,7 +139,7 @@ func DeleteMembersFromGroup(group string, members []string, adminService *admin.
 	for _, memberEmail := range members {
 		err := memberAdmin.Delete(group, memberEmail).Do()
 		if err != nil {
-			return fmt.Errorf("Unable to delete %s from Google group %s: %s", memberEmail, group, err)
+			return fmt.Errorf("unable to delete %s from Google group %s: %s", memberEmail, group, err)
 		}
 	}
 
