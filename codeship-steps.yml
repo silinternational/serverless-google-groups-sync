@@ -1,0 +1,13 @@
+- name: test
+  service: app
+  command: ./codeship/test.sh
+
+- name: deploy_prod
+  service: app
+  tag: master
+  command: bash -c "./codeship/build.sh && serverless deploy -v --stage prod"
+
+- name: track_deployment
+  service: tracker
+  tag: master
+  command: "true"

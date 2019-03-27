@@ -9,6 +9,7 @@ bin
 vendor
 
 # local creds and stuff
+.env
 aws.credentials
 aws.env
 *.aes

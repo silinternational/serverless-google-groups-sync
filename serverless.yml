@@ -9,24 +9,17 @@ provider:
   timeout: 120
   versionFunctions: false
   memorySize: 128
-  vpc:
-    securityGroupIds:
-      - ${env:VPC_SG_ID}
-    subnetIds:
-      - ${env:VPC_SUBNET1}
-      - ${env:VPC_SUBNET2}
-      - ${env:VPC_SUBNET3}
 
   iamRoleStatements:
     - Effect: "Allow"
       Action:
         - "s3:ListBucket"
-      Resource: "arn:aws:s3:::${env:S3_BUCKET_FOR_INPUT}"
+      Resource: "arn:aws:s3:::${env:S3_BUCKET}"
 
     - Effect: "Allow"
       Action:
         - "s3:GetObject"
-      Resource: "arn:aws:s3:::${env:S3_BUCKET_FOR_INPUT}/*"
+      Resource: "arn:aws:s3:::${env:S3_BUCKET}/*"
 
   # you can overwrite defaults here
   #  stage: dev
@@ -36,12 +29,11 @@ provider:
   environment:
     stage: ${self:custom.stage}
     region: ${self:custom.region}
-    S3_BUCKET_FOR_INPUT: ${env:S3_BUCKET_FOR_INPUT}
+    S3_BUCKET: ${env:S3_BUCKET}
 
 custom:
   stage: ${opt:stage, self:provider.stage}
   region: ${opt:region, self:provider.region}
-
 
 package:
   exclude:
@@ -53,17 +45,15 @@ functions:
   cron:
     handler: bin/testlambda
     events:
-    - schedule: cron(*/30 * * * ? *) # every 3 minutes
-
+    - schedule: cron(*/5 * * * ? *) # every 5 minutes
 
 resources:
   Resources:
     ConfigBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${env:S3_BUCKET_FOR_INPUT}
+        BucketName: ${env:S3_BUCKET}
         AccessControl: Private
-
 
   # Print out the name of the bucket that is created
   Outputs:

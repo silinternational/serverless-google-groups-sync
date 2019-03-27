@@ -1,0 +1,11 @@
+app:
+  build:
+    dockerfile_path: Dockerfile
+  encrypted_env_file: .env.encrypted
+  cached: true
+  working_dir: /go/src/github.com/silinternational/serverless-google-groups-sync
+
+tracker:
+    image: silintl/app-deployment-tracker-ga:latest
+    environment:
+        TRACKING_ID: UA-56269387-10

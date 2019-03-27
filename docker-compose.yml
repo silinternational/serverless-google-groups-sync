@@ -7,8 +7,8 @@ services:
       context: ./
       dockerfile: Dockerfile
     env_file:
-      - ./local.env
+      - .env
     volumes:
       - ./:/go/src/github.com/silinternational/serverless-google-groups-sync
     working_dir: /go/src/github.com/silinternational/serverless-google-groups-sync
-    command: ["./run-debug.sh"]
+    command: ["bash"]
