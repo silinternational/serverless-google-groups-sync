@@ -137,15 +137,30 @@ func TestLoadGroupMapsFromConfig(t *testing.T) {
 	}
 }
 
-// This test performs integration work against Google and is therefore commented out to not run on a regular basis
+// // This test performs integration work against Google and is therefore commented out to not run on a regular basis
 // func TestSyncGroups(t *testing.T) {
 // 	appConfig, err := domain.LoadAppConfig("../../config.json")
 // 	if err != nil {
 // 		t.Errorf("unable to load app config, error: %s", err.Error())
 // 	}
 //
-// 	group1Data := []string{
-//
+// 	group1Data := domain.MemberSourceResponse{
+// 		ReportEntry: []struct {
+// 			Email string `json:"Email"`
+// 		}{
+// 			{
+// 				Email: "",
+// 			},
+// 			{
+// 				Email: "",
+// 			},
+// 			{
+// 				Email: "",
+// 			},
+// 			{
+// 				Email: "",
+// 			},
+// 		},
 // 	}
 // 	group1ResponseBody, _ := json.Marshal(&group1Data)
 //

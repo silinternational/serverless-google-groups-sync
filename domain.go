@@ -62,6 +62,13 @@ type GroupDiff struct {
 	MembersToDelete []string
 }
 
+// MemberSourceResponse represents the structure of the API response with list of members
+type MemberSourceResponse struct {
+	ReportEntry []struct {
+		Email string `json:"Email"`
+	} `json:"Report_Entry"`
+}
+
 // IsStringInStringSlice checks whether there is a match for a string
 //  in a slice of strings
 func IsStringInStringSlice(needle string, haystack []string) bool {

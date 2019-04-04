@@ -152,12 +152,17 @@ func GetGroupMembersFromSource(apiConfig domain.MemberSourceApiConfig, groupPath
 	}
 
 	bodyText, err := ioutil.ReadAll(resp.Body)
-
-	members := []string{}
-	err = json.Unmarshal(bodyText, &members)
+	memberResponse := domain.MemberSourceResponse{}
+	err = json.Unmarshal(bodyText, &memberResponse)
 	if err != nil {
 		log.Println(err)
 		return []string{}, err
+	}
+
+	// Reduce memberResponse to just array of email addresses
+	members := []string{}
+	for _, m := range memberResponse.ReportEntry {
+		members = append(members, m.Email)
 	}
 
 	return members, nil
